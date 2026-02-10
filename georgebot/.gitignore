@@ -1,0 +1,21 @@
+# secrets
+.env
+*.env
+
+# python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# audio
+*.mp3
+*.wav
+voice/
+
+# memory
+memory/
+
+# ide
+.vscode/
+.idea/

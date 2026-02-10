@@ -1,0 +1,17 @@
+# Voice output files
+voice/
+*.mp3
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.env
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db

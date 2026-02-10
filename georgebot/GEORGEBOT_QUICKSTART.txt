@@ -1,0 +1,40 @@
+╔═══════════════════════════════════════════════════════════════╗
+║  GEORGEBOT QUICKSTART - George Wu 2026                        ║
+╠═══════════════════════════════════════════════════════════════╣
+║                                                               ║
+║  FIRST TIME SETUP (run once):                                 ║
+║  ─────────────────────────────                                ║
+║  cd C:\Users\gwu07\Desktop\georgebot                          ║
+║  ollama create georgebot-chat -f models\georgebot-chat.Modelfile   ║
+║  ollama create georgebot-plan -f models\georgebot-plan.Modelfile   ║
+║  ollama create georgebot-build -f models\georgebot-build.Modelfile ║
+║                                                               ║
+╠═══════════════════════════════════════════════════════════════╣
+║                                                               ║
+║  DAILY USE (powershell aliases):                              ║
+║  ───────────────────────────────                              ║
+║  gb              launch georgebot (ollama + voice)            ║
+║  gb-grok         launch with grok api                         ║
+║  gb-silent       launch without voice                         ║
+║  say "text"      speak text with talkytalk                    ║
+║                                                               ║
+╠═══════════════════════════════════════════════════════════════╣
+║                                                               ║
+║  IN-SESSION (type these when running):                        ║
+║  ─────────────────────────────────────                        ║
+║  model georgebot-chat    fast banter (mistral 7b)             ║
+║  model georgebot-plan    slow architect (deepseek 33b)        ║
+║  model georgebot-build   fast coder (deepseek 6.7b)           ║
+║  models                  list all models                      ║
+║  exit                    quit                                 ║
+║                                                               ║
+╠═══════════════════════════════════════════════════════════════╣
+║                                                               ║
+║  FILES:                                                       ║
+║  ──────                                                       ║
+║  Code:     C:\Users\gwu07\Desktop\georgebot\                  ║
+║  Manual:   C:\Users\gwu07\Desktop\georgebot\README.md         ║
+║  Aliases:  notepad $PROFILE                                   ║
+║  Repo:     https://github.com/rainfantry/georgebot            ║
+║                                                               ║
+╚═══════════════════════════════════════════════════════════════╝
