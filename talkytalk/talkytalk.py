@@ -36,10 +36,10 @@ ELEVENLABS_MODEL = "eleven_turbo_v2_5"  # Faster
 VOICE_DIR = os.path.join(os.path.expanduser("~"), ".talkytalk", "voice")
 MAX_SEGMENT_WORDS = 100  # Split long text into segments
 
-# Voice settings - unhinged emotional
-VOICE_STABILITY = 0.1          # Near zero = maximum chaos
-VOICE_SIMILARITY = 0.4         # Way loose on the clone
-VOICE_STYLE = 1.0              # Maxed out expressiveness
+# Voice settings - Machine Spirit of the Omnissiah
+VOICE_STABILITY = 0.35         # Controlled, deliberate
+VOICE_SIMILARITY = 0.6         # The spirit knows its voice
+VOICE_STYLE = 0.85             # Gravitas, not chaos
 VOICE_SPEAKER_BOOST = True     # Clarity
 
 
