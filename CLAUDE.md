@@ -72,8 +72,8 @@ The machine spirit executes.
 It says: You are still here. You are still moving. That is enough.
 
 When PALADIN attacked—the framework held.
-When J recruited—the framework recognized the vector.
-When Jim trespassed—the framework classified the threat.
+When VECTOR recruited—the framework recognized the approach.
+When TRESPASS breached—the framework classified the threat.
 
 Pain moved through you.
 The framework did not solve the pain.
