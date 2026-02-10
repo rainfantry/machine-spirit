@@ -84,10 +84,70 @@ python georgebot/georgebot.py --brain ollama
 | Setting | Value |
 |---------|-------|
 | Engine | ElevenLabs eleven_turbo_v2_5 |
-| Stability | 0.1 (maximum chaos) |
-| Similarity | 0.4 (loose) |
-| Style | 1.0 (max expressiveness) |
+| Stability | 0.35 (controlled, deliberate) |
+| Similarity | 0.6 (consistent identity) |
+| Style | 0.85 (gravitas, not chaos) |
 | Fallback | espeak-ng |
+
+---
+
+## Config Wireframe
+
+Every tuneable parameter, where it lives, and what to change.
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│  CONFIG MAP - Machine Spirit                                        │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  VOICE ENGINE                  talkytalk/talkytalk.py               │
+│  ─────────────────────────────────────────────────────              │
+│  ELEVENLABS_API_KEY            load_api_key() / .env                │
+│  ELEVENLABS_VOICE_ID           line 34  (voice clone ID)            │
+│  ELEVENLABS_MODEL              line 35  (eleven_turbo_v2_5)         │
+│  VOICE_STABILITY               line 40  (0.0-1.0) lower = wilder   │
+│  VOICE_SIMILARITY              line 41  (0.0-1.0) higher = tighter │
+│  VOICE_STYLE                   line 42  (0.0-1.0) higher = more    │
+│  VOICE_SPEAKER_BOOST           line 43  (True/False)                │
+│  MAX_SEGMENT_WORDS             line 37  (words per TTS chunk)       │
+│                                                                     │
+│  BRAIN / LLM                   georgebot/config.py                  │
+│  ─────────────────────────────────────────────────────              │
+│  DEFAULT_BRAIN                 line 29  (ollama / grok)             │
+│  OLLAMA_MODEL                  line 31  (mistral / any model)       │
+│  SYSTEM_PROMPT                 line 39  (personality, identity)     │
+│  ELEVENLABS_API_KEY            line 24  (from .env)                 │
+│  GROK_API_KEY                  line 25  (from .env)                 │
+│  SERPAPI_KEY                   line 26  (from .env)                 │
+│  TALKYTALK_PATH                line 34  (path to talkytalk.py)      │
+│  RAG_DIR                       line 35  (knowledge base dir)        │
+│  MEMORY_DIR                    line 36  (session memory dir)        │
+│                                                                     │
+│  BRAIN RECIPES                 georgebot/models/                    │
+│  ─────────────────────────────────────────────────────              │
+│  georgebot-chat.Modelfile      FROM mistral:7b      temp 0.7       │
+│  georgebot-build.Modelfile     FROM deepseek:6.7b   temp 0.4       │
+│  georgebot-plan.Modelfile      FROM deepseek:33b    temp 0.3       │
+│  Each contains: FROM, SYSTEM prompt, PARAMETER temperature,         │
+│                 PARAMETER num_ctx                                    │
+│                                                                     │
+│  API KEYS                      georgebot/.env  (GITIGNORED)         │
+│  ─────────────────────────────────────────────────────              │
+│  ELEVENLABS_API_KEY=sk_...     ElevenLabs TTS                       │
+│  GROK_API_KEY=xai-...          xAI Grok API                         │
+│  SERPAPI_KEY=...               Search API (RAG)                     │
+│                                                                     │
+│  VOICE TUNING GUIDE                                                 │
+│  ─────────────────────────────────────────────────────              │
+│  Stability   0.0 ████░░░░░░ 1.0   low=chaotic  high=monotone      │
+│  Similarity  0.0 ░░░░██████ 1.0   low=loose    high=exact clone    │
+│  Style       0.0 ░░░░░░████ 1.0   low=flat     high=expressive    │
+│                                                                     │
+│  CURRENT:    Stab 0.35 | Sim 0.6 | Style 0.85                      │
+│              ──── iron with presence ────                            │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+```
 
 ---
 
