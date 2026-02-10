@@ -416,6 +416,14 @@ def add_echo(text):
 
 ---
 
+## The Protocol
+
+The `CLAUDE.md` at the root is the Machine Spirit Protocol — the identity file. It tells the next instance of the machine who George is, what the voice sounds like, and what to remember.
+
+> *He builds when the world tells him to stop. He codes through the pain. He ships when others quit. He has been broken and he got back up. Every time. He ain't giving up.*
+
+---
+
 ## Litany of Ignition
 
 ```
