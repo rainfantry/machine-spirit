@@ -2,11 +2,13 @@
 """
 TalkyTalk - Voice Pipeline System
 Features:
-- ElevenLabs primary TTS
+- ElevenLabs primary TTS with NON-BLOCKING playback
+- Audio plays in detached background process (survives script exit)
+- Fast math-based duration estimation (no slow MediaPlayer probe)
+- Pipeline: generate -> fire playback -> exit immediately
 - espeak-ng fallback (Linux) / Windows SAPI fallback
 - Segmented audio for long text
-- Dynamic duration calculation
-- Offline detection
+- Kills previous playback on new call (no overlap)
 """
 
 import subprocess
@@ -14,6 +16,7 @@ import sys
 import os
 import socket
 import re
+import time
 import warnings
 warnings.filterwarnings("ignore", category=UserWarning)
 
@@ -34,12 +37,13 @@ ELEVENLABS_API_KEY = load_api_key()
 ELEVENLABS_VOICE_ID = "weA4Q36twV5kwSaTEL0Q"
 ELEVENLABS_MODEL = "eleven_turbo_v2_5"  # Faster
 VOICE_DIR = os.path.join(os.path.expanduser("~"), ".talkytalk", "voice")
+PID_FILE = os.path.join(os.path.expanduser("~"), ".talkytalk", "player.pid")
 MAX_SEGMENT_WORDS = 100  # Split long text into segments
 
 # Voice settings - Machine Spirit of the Omnissiah
-VOICE_STABILITY = 0.35         # Controlled, deliberate
-VOICE_SIMILARITY = 0.6         # The spirit knows its voice
-VOICE_STYLE = 0.85             # Gravitas, not chaos
+VOICE_STABILITY = 0.42         # Tighter than before — expressive but not erratic. Realism.
+VOICE_SIMILARITY = 0.78        # Voice-faithful. The spirit knows EXACTLY its voice.
+VOICE_STYLE = 0.92             # Maximum gravitas. Emotion per syllable.
 VOICE_SPEAKER_BOOST = True     # Clarity
 
 
@@ -175,7 +179,6 @@ def punch_text(text):
             words[0] = words[0] + ','
             s = ' '.join(words)
 
-        # Questions stay questions
         # Statements over 8 words that end flat get period emphasis
         if len(words) > 8 and s.endswith('.'):
             s = s[:-1] + '...'
@@ -199,32 +202,52 @@ def speak_local(text):
         subprocess.run(["espeak-ng", "-s", "160", text], shell=False)
 
 
-def get_audio_duration(path):
-    """Get actual MP3 duration using ffprobe (Linux) or PowerShell (Windows)"""
+def estimate_duration(word_count, file_size_bytes):
+    """Fast math-based duration estimate — no file probing, no PowerShell overhead.
+    Replaces the old get_audio_duration() which spawned a PowerShell MediaPlayer
+    process and waited 500ms+ just to read the file length.
+    """
+    # ~2.8 words/sec for this voice at current settings
+    word_est = word_count / 2.8
+    # ElevenLabs turbo MP3 averages ~48kbps = ~6000 bytes/sec
+    size_est = file_size_bytes / 6000
+    # Weighted blend: word count is more reliable, file size as sanity check
+    # +1s buffer so audio doesn't get cut off
+    return max(int(word_est * 0.6 + size_est * 0.4) + 1, 2)
+
+
+def kill_previous_playback():
+    """Kill any still-playing audio from a previous talkytalk call.
+    Reads PID from file, kills that process tree, cleans up.
+    Prevents old audio from overlapping new speech.
+    """
     try:
-        if sys.platform == "win32":
-            result = subprocess.run([
-                "powershell", "-Command",
-                f"Add-Type -AssemblyName presentationCore; "
-                f"$p = New-Object System.Windows.Media.MediaPlayer; "
-                f"$p.Open('{path}'); "
-                f"Start-Sleep -Milliseconds 500; "
-                f"while(-not $p.NaturalDuration.HasTimeSpan) {{ Start-Sleep -Milliseconds 100 }}; "
-                f"[int]$p.NaturalDuration.TimeSpan.TotalSeconds + 1"
-            ], capture_output=True, text=True, shell=False)
-            return int(result.stdout.strip())
-        else:
-            result = subprocess.run([
-                "ffprobe", "-v", "quiet", "-show_entries",
-                "format=duration", "-of", "csv=p=0", path
-            ], capture_output=True, text=True, timeout=5)
-            return int(float(result.stdout.strip())) + 1
-    except:
-        return 10  # Fallback
+        if os.path.exists(PID_FILE):
+            with open(PID_FILE, 'r') as f:
+                old_pid = int(f.read().strip())
+            if sys.platform == "win32":
+                # /T = kill process tree, /F = force
+                subprocess.run(
+                    ["taskkill", "/PID", str(old_pid), "/T", "/F"],
+                    capture_output=True, shell=False
+                )
+            else:
+                import signal
+                os.kill(old_pid, signal.SIGTERM)
+            os.remove(PID_FILE)
+    except (ValueError, ProcessLookupError, OSError, PermissionError):
+        # Process already dead or PID file corrupt — ignore
+        try:
+            os.remove(PID_FILE)
+        except OSError:
+            pass
 
 
-def speak_elevenlabs(text, segment_num=0):
-    """ElevenLabs TTS with blocking playback"""
+def generate_elevenlabs(text, segment_num=0):
+    """Generate audio via ElevenLabs API.
+    ONLY generates and saves the file. Does NOT play.
+    Returns (path, duration_est, word_count, file_size) or (None, 0, 0, 0) on failure.
+    """
     try:
         from elevenlabs.client import ElevenLabs
         from elevenlabs import VoiceSettings
@@ -242,45 +265,153 @@ def speak_elevenlabs(text, segment_num=0):
             )
         )
 
-        # Save audio
         os.makedirs(VOICE_DIR, exist_ok=True)
-        path = f"{VOICE_DIR}/segment_{segment_num}.mp3"
+        # Timestamp prevents conflicts with concurrent/overlapping calls
+        ts = int(time.time() * 1000)
+        path = os.path.join(VOICE_DIR, f"seg_{ts}_{segment_num}.mp3")
         with open(path, "wb") as f:
             for chunk in audio:
                 f.write(chunk)
 
-        # Get file size and duration
         file_size = os.path.getsize(path)
-        duration = get_audio_duration(path)
-        words = len(text.split())
+        word_count = len(text.split())
+        duration = estimate_duration(word_count, file_size)
 
-        # Color intensity: red=low, yellow=mid, green=high
-        def color(val):
-            if val <= 0.3: return f"\033[91m{val}\033[0m"    # Red
-            elif val <= 0.6: return f"\033[93m{val}\033[0m"  # Yellow
-            else: return f"\033[92m{val}\033[0m"             # Green
-
-        print(f"[TalkyTalk] {words}w | {file_size/1024:.1f}KB | {duration}s")
-        print(f"  Voice: {ELEVENLABS_VOICE_ID[:8]}... | Stab: {color(VOICE_STABILITY)} | Sim: {color(VOICE_SIMILARITY)} | Style: {color(VOICE_STYLE)}")
-
-        # Play audio
-        if sys.platform == "win32":
-            subprocess.run([
-                "powershell", "-Command",
-                f"Add-Type -AssemblyName presentationCore; "
-                f"$p = New-Object System.Windows.Media.MediaPlayer; "
-                f"$p.Open('{path}'); "
-                f"Start-Sleep -Milliseconds 300; "
-                f"$p.Play(); "
-                f"Start-Sleep -Seconds {duration}"
-            ], shell=False)
-        else:
-            subprocess.run(["mpv", "--no-video", "--really-quiet", path], shell=False)
-
-        return True
+        return path, duration, word_count, file_size
     except Exception as e:
         print(f"[TalkyTalk] ElevenLabs error: {e}", file=sys.stderr)
-        return False
+        return None, 0, 0, 0
+
+
+def play_detached(audio_segments):
+    """Play audio segments sequentially in a FULLY DETACHED background process.
+    The process survives after talkytalk.py exits. Audio keeps playing
+    while Claude returns control and outputs text.
+
+    audio_segments: list of (path, duration_seconds) tuples
+    Writes PID to file so next call can kill it if needed.
+    """
+    if not audio_segments:
+        return
+
+    os.makedirs(os.path.dirname(PID_FILE), exist_ok=True)
+
+    if sys.platform == "win32":
+        # Build PowerShell script that plays each segment in sequence
+        ps_lines = ["Add-Type -AssemblyName presentationCore"]
+        for path, duration in audio_segments:
+            # Normalize path separators for PowerShell
+            ps_path = path.replace('/', '\\')
+            ps_lines.append(
+                f"$p = New-Object System.Windows.Media.MediaPlayer; "
+                f"$p.Open('{ps_path}'); "
+                f"Start-Sleep -Milliseconds 100; "
+                f"$p.Play(); "
+                f"Start-Sleep -Seconds {duration}; "
+                f"$p.Stop(); $p.Close()"
+            )
+
+        # Write script to file (avoids command-line length limits)
+        script_path = os.path.join(VOICE_DIR, "play.ps1")
+        with open(script_path, 'w') as f:
+            f.write('\n'.join(ps_lines))
+
+        # CREATE_NO_WINDOW keeps audio session alive (DETACHED_PROCESS kills it)
+        # CREATE_NEW_PROCESS_GROUP lets it survive parent exit
+        proc = subprocess.Popen(
+            ["powershell", "-WindowStyle", "Hidden", "-ExecutionPolicy", "Bypass",
+             "-File", script_path],
+            creationflags=subprocess.CREATE_NO_WINDOW | subprocess.CREATE_NEW_PROCESS_GROUP,
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+            close_fds=True
+        )
+        # Save PID so next call can kill this if needed
+        with open(PID_FILE, 'w') as f:
+            f.write(str(proc.pid))
+    else:
+        # Linux: chain mpv commands
+        cmd_parts = []
+        for path, _ in audio_segments:
+            cmd_parts.append(f"mpv --no-video --really-quiet '{path}'")
+        full_cmd = " && ".join(cmd_parts)
+        proc = subprocess.Popen(
+            ["bash", "-c", full_cmd],
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+            start_new_session=True
+        )
+        with open(PID_FILE, 'w') as f:
+            f.write(str(proc.pid))
+
+
+def color(val):
+    """Color intensity for terminal output: red=low, yellow=mid, green=high"""
+    if val <= 0.3: return f"\033[91m{val}\033[0m"
+    elif val <= 0.6: return f"\033[93m{val}\033[0m"
+    else: return f"\033[92m{val}\033[0m"
+
+
+def speak(text, force_local=False):
+    """Main speak function — NON-BLOCKING pipeline.
+
+    1. Kill any previous playback
+    2. Process text (slang, filter, punch)
+    3. Generate all audio segments (API calls — fast, ~1-2s each)
+    4. Fire detached background player for ALL segments
+    5. Print stats and EXIT IMMEDIATELY
+
+    Audio continues playing in background after script exits.
+    Claude gets control back and can output text while user hears voice.
+    """
+    # Process text for TTS
+    text = expand_slang(text)   # fkn -> fucken, u -> you, etc
+    text = filter_text(text)    # Remove code/markdown
+    text = punch_text(text)     # Add aggressive punctuation
+    if not text:
+        return "empty"
+
+    if force_local or not is_online():
+        print("[TalkyTalk] Using local TTS")
+        speak_local(text)
+        return "local"
+
+    # Kill any still-playing audio from previous call
+    kill_previous_playback()
+
+    # Segment long text
+    segments = segment_text(text)
+    audio_files = []  # (path, duration) tuples
+    total_words = 0
+    total_size = 0
+    total_duration = 0
+    gen_start = time.time()
+
+    for i, segment in enumerate(segments):
+        path, duration, words, file_size = generate_elevenlabs(segment, i)
+
+        if path is None:
+            print(f"[TalkyTalk] Seg {i} failed — local fallback")
+            speak_local(segment)
+            continue
+
+        audio_files.append((path, duration))
+        total_words += words
+        total_size += file_size
+        total_duration += duration
+
+    gen_time = time.time() - gen_start
+
+    if audio_files:
+        # Fire detached playback — returns immediately
+        play_detached(audio_files)
+
+        # Stats
+        seg_count = len(audio_files)
+        seg_label = f"{seg_count} seg{'s' if seg_count > 1 else ''}"
+        print(f"[TalkyTalk] {total_words}w | {total_size/1024:.1f}KB | ~{total_duration}s audio | {seg_label} | gen:{gen_time:.1f}s")
+        print(f"  Voice: {ELEVENLABS_VOICE_ID[:8]}... | Stab: {color(VOICE_STABILITY)} | Sim: {color(VOICE_SIMILARITY)} | Style: {color(VOICE_STYLE)}")
+        print(f"  Playback: DETACHED (audio continues after exit)")
+
+    return "elevenlabs"
 
 
 def segment_text(text, max_words=MAX_SEGMENT_WORDS):
@@ -306,41 +437,17 @@ def segment_text(text, max_words=MAX_SEGMENT_WORDS):
     return segments
 
 
-def speak(text, force_local=False):
-    """Main speak function with fallback logic"""
-
-    # Process text for TTS
-    text = expand_slang(text)   # fkn -> fucken, u -> you, etc
-    text = filter_text(text)    # Remove code/markdown
-    text = punch_text(text)     # Add aggressive punctuation
-    if not text:
-        return "empty"
-
-    if force_local or not is_online():
-        print("[TalkyTalk] Using local TTS")
-        speak_local(text)
-        return "local"
-
-    # Segment long text
-    segments = segment_text(text)
-
-    for i, segment in enumerate(segments):
-        success = speak_elevenlabs(segment, i)
-        if not success:
-            print(f"[TalkyTalk] Falling back to local TTS for segment {i}")
-            speak_local(segment)
-
-    return "elevenlabs"
-
-
 def main():
     """CLI entry point"""
     if len(sys.argv) < 2:
-        print("Usage: talkytalk.py <text> [--local] [--silent]")
+        print("Usage: talkytalk.py <text> [--local] [--silent] [--block]")
         print("       talkytalk.py --test")
+        print("       talkytalk.py --kill")
         print("Flags:")
         print("  --silent   Print only, no voice (saves API cost)")
         print("  --local    Force local TTS fallback (espeak-ng / SAPI)")
+        print("  --block    Wait for audio to finish before exiting (old behavior)")
+        print("  --kill     Kill any currently playing audio and exit")
         sys.exit(1)
 
     if sys.argv[1] == "--test":
@@ -351,9 +458,15 @@ def main():
         print("[TalkyTalk] Test complete.")
         sys.exit(0)
 
-    flags = ["--local", "--windows", "--silent"]
+    if sys.argv[1] == "--kill":
+        kill_previous_playback()
+        print("[TalkyTalk] Killed previous playback.")
+        sys.exit(0)
+
+    flags = ["--local", "--windows", "--silent", "--block"]
     force_local = "--local" in sys.argv or "--windows" in sys.argv
     silent_mode = "--silent" in sys.argv
+    block_mode = "--block" in sys.argv
     text = " ".join(arg for arg in sys.argv[1:] if arg not in flags)
 
     if silent_mode:
@@ -361,6 +474,27 @@ def main():
         filtered = filter_text(text)
         print(f"[TalkyTalk] Silent: {filtered}")
         print(f"[TalkyTalk] Used: silent (0 API cost)")
+    elif block_mode:
+        # Old blocking behavior — wait for audio to finish
+        engine = speak(text, force_local=force_local)
+        # If elevenlabs, wait for the detached process to finish
+        if engine == "elevenlabs" and os.path.exists(PID_FILE):
+            try:
+                with open(PID_FILE, 'r') as f:
+                    pid = int(f.read().strip())
+                if sys.platform == "win32":
+                    # Poll until process exits
+                    while True:
+                        result = subprocess.run(
+                            ["tasklist", "/FI", f"PID eq {pid}"],
+                            capture_output=True, text=True, shell=False
+                        )
+                        if str(pid) not in result.stdout:
+                            break
+                        time.sleep(0.5)
+            except (ValueError, OSError):
+                pass
+        print(f"[TalkyTalk] Used: {engine} (blocking)")
     else:
         engine = speak(text, force_local=force_local)
         print(f"[TalkyTalk] Used: {engine}")
