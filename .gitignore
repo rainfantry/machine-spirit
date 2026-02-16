@@ -8,3 +8,4 @@ memory/
 *.db
 *.log
 filebrowser.db
+cam_captures/
