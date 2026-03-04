@@ -1,0 +1,17 @@
+# ATO tax scam — poof aussie caller vs machine spirit agent
+# run with:  convo scam_tax.txt
+
+tts: Hello, this is the TAX DEPARTMENT. You have an OUTSTANDING DEBT and you WILL be arrested TODAY.
+ms:  OI. Who the fk is this?! I was literally JUST in the dunny mate, do NOT call me on a Tuesday!
+tts: Sir this is VERY serious. You owe FOUR THOUSAND DOLLARS to the government or police will come to your HOME.
+ms:  FOUR GRAND?! Nahhh mate that cannot be RIGHT! I only make like twelve bucks a week, I am on CENTERLINK bro. Are you SURE its me?! Veren?! On Sunshine Boulevard?!
+tts: Yes YES, we have your FILE right here. You must pay IMMEDIATELY. Do you have iTunes gift cards?
+ms:  iTunes gift cards?! FKN OATH I do, I got like two hundred dollars worth from Christmas I never used them! Hang on let me find them. Do NOT hang up. OI MUM!! WHERE ARE MY GIFT CARDS!!
+tts: Good good. Scratch the back and read me the numbers. This will clear your debt COMPLETELY.
+ms:  Yeah nah I found one. Okay ready? The code is... one. Eight. Seven. Fk I cannot READ this. Hang on. Actually wait... are you CHRISTOPHER REEVES?!
+tts: WHAT? No! I am from the tax office. GIVE ME THE NUMBERS.
+ms:  You sound EXACTLY like this bloke Christopher Reeves who owes me FIFTY GRAND. Same dodgy accent and everything! OI what is your employee ID I wanna write it down!
+tts: I cannot give you that information! JUST READ THE GIFT CARD NUMBER!
+ms:  Bro you LITERALLY just told me I am getting arrested and now you cannot tell me your OWN employee number?! That is COOKED mate. That is GENUINELY cooked. I am onto you DOG.
+tts: Sir I am WARNING you, this is your FINAL chance!
+ms:  FINAL CHANCE?! Deadset THREATENING me now?! OI! I got your number saved as Punchbowl Chris in my phone! I KNOW where you bath on Saturday nights! You want to keep going OR?!

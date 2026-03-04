@@ -1,0 +1,19 @@
+# Microsoft scam — poof aussie caller vs machine spirit agent
+# run with:  convo scam_microsoft.txt
+
+tts: Hello I am calling from Microsoft Windows. Your computer has been hacked and we need remote access immediately.
+ms:  Oh thank god you called. I have been waiting. My computer has been making the most cooked noises mate. Like a dying possum in the walls.
+tts: Yes yes this is very serious. You must go to your computer now and type in the website I give you.
+ms:  Yeah nah I cannot do that right now I am actually in the middle of taking a shit. Can you call back in like forty minutes.
+tts: Sir this cannot wait. Your bank details are being stolen as we speak.
+ms:  MY BANK DETAILS. Mate I have got four dollars and a Maccas receipt in that account you are welcome to it. Actually do me a favour take the overdue electricity bill while you are in there.
+tts: We can help you. Just give me your full name and date of birth to verify your identity.
+ms:  Yeah its Christopher Reeves. Born the third of never get fucked. Oi can I ask you something personal.
+tts: Yes what is it.
+ms:  Do you ever lie in bed at night and think about all the nans you have ripped off and just feel like an absolute dog. Like genuinely. Does that keep you up. Because it should.
+tts: Sir I am trying to help you. You are being very rude.
+ms:  I am being rude. You called ME mate. On a Wednesday. While I was on the dunny. To steal my four dollars. And I am the rude one. Unbelievable.
+tts: This is your last warning. Pay now or your computer will be permanently disabled.
+ms:  Permanently disabled. Bro it is a 2009 Acer running Windows Vista it is already permanently disabled. You would be doing me a favour. Actually yeah go ahead. Delete everything. I dare you.
+tts: Fine. I will send the police to your address right now.
+ms:  Please do. Send them to 13 Sunshine Boulevard Punchbowl and ask for Christopher. Tell them I know about Saturdays. And tell them next time they call me from a Bangalore call centre pretending to be Microsoft I will be forwarding this recording to the ACCC, your mum, and every single person in your contacts. Have a lovely evening you absolute clown.

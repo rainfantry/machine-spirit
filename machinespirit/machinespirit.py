@@ -11,9 +11,15 @@ Features:
 - Kills previous playback on new call (no overlap)
 """
 
-import subprocess
-import sys
 import os
+import sys
+
+# Add custom library path for elevenlabs
+custom_lib_path = r"C:\Users\veren\py_libs"
+if custom_lib_path not in sys.path:
+    sys.path.insert(0, custom_lib_path)
+
+import subprocess
 import socket
 import re
 import time
@@ -34,7 +40,7 @@ def load_api_key():
     return None
 
 ELEVENLABS_API_KEY = load_api_key()
-ELEVENLABS_VOICE_ID = "weA4Q36twV5kwSaTEL0Q"
+ELEVENLABS_VOICE_ID = "twLPF55UcxNYRmxaWLAn"
 ELEVENLABS_MODEL = "eleven_turbo_v2_5"  # Faster
 VOICE_DIR = os.path.join(os.path.expanduser("~"), ".talkytalk", "voice")
 PID_FILE = os.path.join(os.path.expanduser("~"), ".talkytalk", "player.pid")
@@ -86,6 +92,10 @@ SLANG_MAP = {
     r'\bfag\b': 'fag',
     r'\bpoof\b': 'poof',
     r'\bdrongo\b': 'drongo',
+    r'\bsuka\b': 'suka',
+    r'\bblyad\b': 'blyad',
+    r'\bmudak\b': 'mudak',
+    r'\bgavno\b': 'gavno',
     # casual
     r'\bu\b': 'you',
     r'\bur\b': 'your',
@@ -315,6 +325,7 @@ def play_detached(audio_segments):
         script_path = os.path.join(VOICE_DIR, "play.ps1")
         with open(script_path, 'w') as f:
             f.write('\n'.join(ps_lines))
+            f.write('\nexit\n')
 
         # CREATE_NO_WINDOW keeps audio session alive (DETACHED_PROCESS kills it)
         # CREATE_NEW_PROCESS_GROUP lets it survive parent exit
@@ -439,8 +450,23 @@ def segment_text(text, max_words=MAX_SEGMENT_WORDS):
 
 def main():
     """CLI entry point"""
+    # Support piped stdin: echo "text" | machinespirit
+    # Uses PeekNamedPipe to check bytes available — never blocks
+    try:
+        import msvcrt, ctypes
+        _handle = msvcrt.get_osfhandle(sys.stdin.fileno())
+        _bytes_avail = ctypes.c_ulong(0)
+        if ctypes.windll.kernel32.PeekNamedPipe(
+                _handle, None, 0, None,
+                ctypes.byref(_bytes_avail), None) and _bytes_avail.value > 0:
+            piped = sys.stdin.read(_bytes_avail.value).strip()
+            if piped:
+                sys.argv.append(piped)
+    except Exception:
+        pass
+
     if len(sys.argv) < 2:
-        print("Usage: talkytalk.py <text> [--local] [--silent] [--block]")
+        print("Usage: machinespirit.py <text> [--local] [--silent] [--block]")
         print("       talkytalk.py --test")
         print("       talkytalk.py --kill")
         print("Flags:")
@@ -491,7 +517,7 @@ def main():
                         )
                         if str(pid) not in result.stdout:
                             break
-                        time.sleep(0.5)
+                        time.sleep(0.1)
             except (ValueError, OSError):
                 pass
         print(f"[TalkyTalk] Used: {engine} (blocking)")

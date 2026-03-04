@@ -8,6 +8,11 @@ __pycache__/
 *.pyo
 .env
 
+# Debug / temp
+probe.py
+temp_voice.mp3
+Radon_Privacy-Policy.html
+
 # IDE
 .vscode/
 .idea/
