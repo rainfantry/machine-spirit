@@ -1,0 +1,21 @@
+# python
+__pycache__/
+*.pyc
+
+# audio outputs
+*.wav
+
+# logs
+logs/
+
+# memory
+memory.txt
+
+# large models
+*.onnx
+*.gguf
+*.bin
+
+# editor junk
+.vscode/
+*.swp
