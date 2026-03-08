@@ -3,6 +3,12 @@
    ═╬═
     ║
 ```
+# PIPE VOICE DIRECT: 
+
+echo "Machine spirit online" \
+| piper --model voices/en_US-amy-medium.onnx --output_raw \
+| ffplay -nodisp -autoexit -f s16le -ar 22050 -ac 1 -
+
 
 # MACHINE SPIRIT
 
